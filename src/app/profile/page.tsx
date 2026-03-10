@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const { userId: clerkId } = await auth();
 
