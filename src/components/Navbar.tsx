@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, MessageSquare, PlusSquare, Users, User } from "lucide-react";
+import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
 
 const navItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "DMs", href: "/dms", icon: MessageSquare },
   { name: "Studio", href: "/studio", icon: PlusSquare },
   { name: "Groups", href: "/groups", icon: Users },
-  { name: "Profile", href: "/profile", icon: User },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { isLoaded, userId } = useAuth();
+
+  const isSignedIn = isLoaded && userId;
 
   return (
     <>
@@ -35,6 +38,21 @@ export default function Navbar() {
             </Link>
           );
         })}
+        <div className="flex flex-col items-center justify-center">
+          {!isSignedIn ? (
+            <SignInButton mode="modal">
+              <button className="flex flex-col items-center justify-center text-gray-400 hover:text-white transition-colors">
+                <User size={24} />
+                <span className="text-[10px] font-medium">Log In</span>
+              </button>
+            </SignInButton>
+          ) : (
+            <div className="flex flex-col items-center justify-center space-y-1">
+              <UserButton />
+              <span className="text-[10px] font-medium text-gray-400">Me</span>
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Desktop Sidebar */}
@@ -66,6 +84,22 @@ export default function Navbar() {
               </Link>
             );
           })}
+          
+          <div className="mt-auto lg:px-2 pt-4 border-t border-white/5 w-full">
+            {!isSignedIn ? (
+              <SignInButton mode="modal">
+                <button className="flex items-center space-x-4 w-full rounded-xl p-3 text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                  <User size={24} />
+                  <span className="hidden lg:block font-medium">Sign In</span>
+                </button>
+              </SignInButton>
+            ) : (
+              <div className="flex items-center space-x-4 w-full p-3">
+                <UserButton />
+                <span className="hidden lg:block font-medium text-gray-400">Account</span>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
     </>
