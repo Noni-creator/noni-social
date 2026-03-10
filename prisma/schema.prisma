@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique
+  avatar_url   String?
+  social_score Int      @default(0)
+  created_at   DateTime @default(now())
+
+  reels             Reel[]
+  sent_messages     DirectMessage[]  @relation("SentMessages")
+  received_messages DirectMessage[]  @relation("ReceivedMessages")
+  groups_created    Group[]          @relation("GroupCreator")
+  group_memberships GroupMember[]
+  score_logs        SocialScoreLog[]
+}
+
+enum ReelType {
+  FRIENDSHIP
+  FUNNY
+  MUSIC
+}
+
+model Reel {
+  id               String   @id @default(uuid()) @db.Uuid
+  user_id          String   @db.Uuid
+  video_url        String
+  type             ReelType
+  duration_seconds Int
+  created_at       DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model DirectMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  sender_id   String   @db.Uuid
+  receiver_id String   @db.Uuid
+  content     String
+  created_at  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [sender_id], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiver_id], references: [id])
+}
+
+model Group {
+  id         String @id @default(uuid()) @db.Uuid
+  name       String
+  created_by String @db.Uuid
+
+  creator User          @relation("GroupCreator", fields: [created_by], references: [id])
+  members GroupMember[]
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+model GroupMember {
+  group_id String    @db.Uuid
+  user_id  String    @db.Uuid
+  role     GroupRole
+
+  group Group @relation(fields: [group_id], references: [id])
+  user  User  @relation(fields: [user_id], references: [id])
+
+  @@id([group_id, user_id])
+}
+
+model SocialScoreLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  action     String
+  points     Int
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
