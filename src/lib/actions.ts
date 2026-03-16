@@ -61,42 +61,14 @@ export async function createReel(formData: FormData) {
     audioId = (song as any).id;
   }
 
-  let finalUrl = "";
+  // The URL of the video already uploaded by the client
+  const videoUrl = formData.get("videoUrl") as string | null;
 
-  // The form will pass a 'file' (Video or Image)
-  const file = formData.get("file") as File | null;
-  // Fallback for raw URLs
-  const videoUrlStr = formData.get("videoUrl") as string | null;
-
-  if (file && file.size > 0) {
-    // Determine bucket and path
-    const isImage = type === "PHOTO_STRIP";
-    const bucketName = isImage ? "images" : "videos";
-    
-    // Generate a unique file name
-    const fileExt = file.name.split('.').pop() || (isImage ? 'png' : 'mp4');
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(bucketName)
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error("Supabase Storage Error:", uploadError);
-      throw new Error(`Failed to upload file to storage: ${uploadError.message}`);
-    }
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(uploadData.path);
-
-    finalUrl = publicUrlData.publicUrl;
-  } else if (videoUrlStr) {
-    finalUrl = videoUrlStr;
-  } else {
-    throw new Error("No file or videoUrl provided");
+  if (!videoUrl) {
+    throw new Error("No videoUrl provided");
   }
+
+  const finalUrl = videoUrl;
 
   await db.reel.create({
     data: {

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { ReelType, Song, Visibility } from "@prisma/client";
 import { createReel } from "@/lib/actions";
+import { supabase } from "@/lib/supabase";
 
 interface StudioRecorderProps {
   songs: Song[]; // Existing songs in our DB
@@ -217,8 +218,29 @@ export default function StudioRecorder({ songs: dbSongs }: StudioRecorderProps) 
     setIsSubmitting(true);
     
     try {
+      // 1. Upload file directly to Supabase Storage
+      const fileExt = recordedBlob.type.split("/")[1] || "mp4";
+      const fileName = `reel-${Date.now()}.${fileExt}`;
+      const bucketName = "videos";
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(fileName, recordedBlob);
+
+      if (uploadError) {
+        throw new Error(`Storage Upload Failed: ${uploadError.message}`);
+      }
+
+      // 2. Get Public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(uploadData.path);
+
+      const videoUrl = publicUrlData.publicUrl;
+
+      // 3. Prepare FormData for DB entry (without the heavy file)
       const formData = new FormData();
-      formData.append("file", recordedBlob, "video.webm");
+      formData.append("videoUrl", videoUrl);
       formData.append("type", type);
       formData.append("visibility", visibility);
       if (caption) formData.append("caption", caption);
@@ -227,7 +249,6 @@ export default function StudioRecorder({ songs: dbSongs }: StudioRecorderProps) 
         if (selectedSong.id) {
           formData.append("audioId", selectedSong.id);
         } else {
-          // iTunes song metadata
           formData.append("songTitle", selectedSong.trackName);
           formData.append("songArtist", selectedSong.artistName);
           formData.append("songUrl", selectedSong.previewUrl);
@@ -244,9 +265,9 @@ export default function StudioRecorder({ songs: dbSongs }: StudioRecorderProps) 
         // Success!
         window.location.href = "/";
       }
-    } catch (error) {
-      console.error("Error posting reel:", error);
-      alert("An unexpected error occurred.");
+    } catch (error: any) {
+      console.error("DEBUG_STUDIO_UPLOAD_ERROR:", error);
+      alert(`Upload Failed: ${error.message || error}`);
       setIsSubmitting(false);
     }
   };
