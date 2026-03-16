@@ -30,12 +30,10 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-accent selection:text-white`}
         >
-          <div className="flex bg-black min-h-screen text-white">
+          <div className="bg-black min-h-screen text-white relative">
             <Navbar />
-            <main className="flex-1 pb-16 md:pb-0 md:pl-20 lg:pl-64">
-              <div className="mx-auto max-w-screen-xl px-4 py-8 lg:px-8">
-                {children}
-              </div>
+            <main>
+              {children}
             </main>
           </div>
         </body>

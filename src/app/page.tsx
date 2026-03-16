@@ -1,36 +1,31 @@
 import { db } from "@/lib/db";
-import ReelCard from "@/components/ReelCard";
+import ReelFeed from "@/components/ReelFeed";
 
 export const dynamic = "force-dynamic";
 
-export default async function FeedPage() {
+export default async function HomePage() {
   const reels = await db.reel.findMany({
+    orderBy: { created_at: "desc" },
     include: {
-      user: {
-        select: {
-          username: true,
-          avatar_url: true,
-        },
-      },
-    },
-    orderBy: {
-      created_at: "desc",
-    },
+      user: true,
+      song: true,
+      _count: {
+        select: { likes: true }
+      }
+    }
   });
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl mx-auto h-[calc(100vh-120px)] overflow-y-auto snap-y snap-mandatory scrollbar-hide py-4">
-      {reels.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-          <div className="text-6xl animate-bounce">🎬</div>
-          <h1 className="text-3xl font-black italic">NO REELS YET</h1>
-          <p className="text-gray-400 max-w-xs">Be the first to post a viral moment in the Studio! 🚀</p>
+    <main className="h-[100dvh] w-full bg-black overflow-hidden relative">
+      <ReelFeed reels={reels} />
+      
+      {/* Top Navigation Overlay */}
+      <div className="absolute top-0 left-0 right-0 p-8 flex justify-center gap-6 z-50 pointer-events-none">
+        <div className="flex gap-8 pointer-events-auto">
+          <button className="text-white font-black text-lg drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] border-b-4 border-white pb-1 transition active:scale-95">For You</button>
+          <button className="text-white/50 font-black text-lg drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] pb-1 transition hover:text-white active:scale-95">Following</button>
         </div>
-      ) : (
-        reels.map((reel) => (
-          <ReelCard key={reel.id} reel={reel} />
-        ))
-      )}
-    </div>
+      </div>
+    </main>
   );
 }

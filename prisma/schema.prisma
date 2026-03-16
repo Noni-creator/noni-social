@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 model User {
@@ -20,32 +20,92 @@ model User {
   groups_created    Group[]          @relation("GroupCreator")
   group_memberships GroupMember[]
   score_logs        SocialScoreLog[]
+  followers         Follow[]         @relation("UserFollowers")
+  following         Follow[]         @relation("UserFollowing")
+  reel_likes        ReelLike[]
+}
+
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Follow {
+  id           String       @id @default(uuid()) @db.Uuid
+  follower_id  String       @db.Uuid
+  following_id String       @db.Uuid
+  status       FollowStatus @default(PENDING)
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  follower  User @relation("UserFollowing", fields: [follower_id], references: [id])
+  following User @relation("UserFollowers", fields: [following_id], references: [id])
+
+  @@unique([follower_id, following_id])
+}
+
+model Song {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  artist      String
+  audio_url   String
+  cover_image String?
+  duration    Int      @default(0)
+  created_at  DateTime @default(now())
+
+  reels Reel[]
 }
 
 enum ReelType {
   FRIENDSHIP
   FUNNY
   MUSIC
+  PHOTO_STRIP
+}
+
+enum Visibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
 }
 
 model Reel {
-  id               String   @id @default(uuid()) @db.Uuid
-  user_id          String   @db.Uuid
+  id               String     @id @default(uuid()) @db.Uuid
+  user_id          String     @db.Uuid
+  audio_id         String?    @db.Uuid
   video_url        String
   caption          String?
   type             ReelType
-  duration_seconds Int      @default(0)
-  created_at       DateTime @default(now())
+  visibility       Visibility @default(PUBLIC)
+  duration_seconds Int        @default(0)
+  created_at       DateTime   @default(now())
 
+  user User  @relation(fields: [user_id], references: [id])
+  song Song? @relation(fields: [audio_id], references: [id])
+  likes ReelLike[]
+}
+
+model ReelLike {
+  id         String   @id @default(uuid()) @db.Uuid
+  reel_id    String   @db.Uuid
+  user_id    String   @db.Uuid
+  created_at DateTime @default(now())
+
+  reel Reel @relation(fields: [reel_id], references: [id])
   user User @relation(fields: [user_id], references: [id])
+
+  @@unique([reel_id, user_id])
 }
 
 model DirectMessage {
-  id          String   @id @default(uuid()) @db.Uuid
-  sender_id   String   @db.Uuid
-  receiver_id String   @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  sender_id   String    @db.Uuid
+  receiver_id String    @db.Uuid
   content     String
-  created_at  DateTime @default(now())
+  read        Boolean   @default(false)
+  read_at     DateTime?
+  created_at  DateTime  @default(now())
 
   sender   User @relation("SentMessages", fields: [sender_id], references: [id])
   receiver User @relation("ReceivedMessages", fields: [receiver_id], references: [id])
